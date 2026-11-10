@@ -1,0 +1,13 @@
+$kind: http-request
+name: http://localhost:3000/payments/2/confirm-test
+description: ""
+url: http://localhost:3000/payments/2/confirm-test
+method: POST
+body:
+  type: json
+  content: "\r\n{}\r\n"
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_0r7b}}"
+order: 1000

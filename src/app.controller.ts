@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { AppService } from './app.service.js';
 
 @Controller()
 export class AppController {
@@ -9,4 +9,17 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('status')
+  getStatus(): object {
+    return{
+      project: 'Private Bus Digital Ticekting platform',
+      status: 'BAckend is running',
+    };
+  }
+
+
+
+
+  
 }

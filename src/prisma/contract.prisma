@@ -1,0 +1,139 @@
+// use prisma-8
+
+enum UserRole {
+  PASSENGER
+  CONDUCTOR
+  OWNER
+  ADMIN
+}
+
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  phone        String   @unique
+  passwordHash String
+  role         UserRole @default(PASSENGER)
+  isActive     Boolean  @default(true)
+
+  // Conductor belongs to one owner
+  ownerId      Int?
+  owner        User?    @relation("OwnerConductors", fields: [ownerId], references: [id])
+  conductors   User[]   @relation("OwnerConductors")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+
+  buses        Bus[]
+}
+
+
+model Bus {
+  id                 Int      @id @default(autoincrement())
+  busNumber          String   @unique
+  registrationNumber String   @unique
+  capacity           Int
+
+  ownerId            Int
+  owner              User     @relation(fields: [ownerId], references: [id])
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+}
+
+model Stop {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model Route {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String   @unique
+  ownerId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+
+model RouteDirection {
+  id        Int      @id @default(autoincrement())
+  routeId   Int
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+model RouteStop {
+  id               Int      @id @default(autoincrement())
+  routeDirectionId Int
+  stopId           Int
+  sequence         Int
+
+  customName       String?
+  customCode       String?
+
+  createdAt        DateTime @default(now())
+}
+
+
+
+model Fare {
+  id               Int      @id @default(autoincrement())
+  routeDirectionId Int
+  fromStopId       Int
+  toStopId         Int
+  amount           Float
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+}
+
+
+
+model Trip {
+  id               Int      @id @default(autoincrement())
+  busId            Int
+  routeDirectionId Int
+  conductorId      Int?
+  departureTime    DateTime
+  status           String   @default("SCHEDULED")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+}
+
+
+
+
+model Ticket {
+  id               Int      @id @default(autoincrement())
+  passengerId      Int
+  tripId           Int
+  fromStopId       Int
+  toStopId         Int
+  fareAmount       Float
+  status           String   @default("PENDING_PAYMENT")
+  qrToken          String?  @unique
+  usedAt           DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now())
+}
+
+
+
+model Payment {
+  id                Int      @id @default(autoincrement())
+  ticketId          Int      @unique
+  amount            Float
+  status            String   @default("PENDING")
+  provider          String   @default("TEST")
+  providerOrderId   String?  @unique
+  providerPaymentId String?  @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
+}
+

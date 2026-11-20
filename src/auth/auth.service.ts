@@ -76,6 +76,16 @@ async login(data: any) {
     throw new UnauthorizedException('Invalid email/phone or password')
   }
 
+  if (!user) {
+    throw new UnauthorizedException('Invalid email/phone or password')
+  }
+
+  if (user.isActive === false) {
+    throw new UnauthorizedException(
+      'Your account has been deactivated. Please contact your bus owner.',
+    )
+  }
+
   const passwordMatch = await bcrypt.compare(
     data.password,
     user.passwordHash,
@@ -136,6 +146,70 @@ async createConductor(data: any, ownerId: number) {
 
   return safeUser;
 }
+
+
+
+
+
+async getMyConductors(ownerId: number) {
+  const users = await db.orm.public.User.all();
+
+  return users
+    .filter(
+      (user) =>
+        user.role === 'CONDUCTOR' &&
+        user.ownerId === ownerId,
+    )
+    .map((user) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      isActive: user.isActive,
+    }));
+}
+
+
+
+async updateConductorStatus(
+  conductorId: number,
+  ownerId: number,
+  isActive: boolean,
+) {
+  if (!Number.isInteger(conductorId) || conductorId <= 0) {
+    throw new BadRequestException('Valid conductor ID is required');
+  }
+
+  const users = await db.orm.public.User.all();
+
+  const conductor = users.find(
+    (user) =>
+      user.id === conductorId &&
+      user.role === 'CONDUCTOR' &&
+      user.ownerId === ownerId,
+  );
+
+  if (!conductor) {
+    throw new BadRequestException('Conductor not found');
+  }
+
+const updated = await db.orm.public.User
+  .where({ id: conductorId })
+  .update({ isActive });
+
+if (!updated) {
+  throw new BadRequestException('Unable to update conductor status');
+}
+
+return {
+  id: updated.id,
+  name: updated.name,
+  email: updated.email,
+  phone: updated.phone,
+  isActive: updated.isActive,
+};
+}
+
 
 
 

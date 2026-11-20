@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post , Request , UseGuards} from '@nestjs/common';
+import { Body, Controller, Get, Post , Request , UseGuards , Param , Patch , ParseIntPipe} from '@nestjs/common';
 import { Roles } from './roles.decorator.js';
 import { RolesGuard } from './roles.guard.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
@@ -82,5 +82,27 @@ async createConductor(
   );
 }
 
+
+@Get('conductors')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('OWNER')
+getMyConductors(@Request() req: any) {
+  return this.authService.getMyConductors(Number(req.user.sub));
+}
+
+@Patch('conductors/:conductorId/status')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('OWNER')
+async updateConductorStatus(
+  @Param('conductorId', ParseIntPipe) conductorId: number,
+  @Body() data: { isActive: boolean },
+  @Request() req: any,
+) {
+  return this.authService.updateConductorStatus(
+    conductorId,
+    Number(req.user.sub),
+    data.isActive,
+  );
+}
 
 }

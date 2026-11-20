@@ -406,5 +406,126 @@ async getConductorVerificationHistory(conductorId: number) {
 }
 
 
+
+
+async getOwnerRevenueReport(ownerId: number) {
+    if (!Number.isInteger(ownerId) || ownerId <= 0) {
+      throw new BadRequestException('Valid owner ID is required');
+    }
+
+    const buses = await db.orm.public.Bus.all();
+    const ownerBuses = buses.filter((bus) => bus.ownerId === ownerId);
+    const ownerBusIds = new Set(ownerBuses.map((bus) => bus.id));
+
+    const trips = await db.orm.public.Trip.all();
+    const ownerTrips = trips.filter((trip) => ownerBusIds.has(trip.busId));
+    const ownerTripIds = new Set(ownerTrips.map((trip) => trip.id));
+
+    const tickets = await db.orm.public.Ticket.all();
+    const ownerTickets = tickets.filter((ticket) =>
+      ownerTripIds.has(ticket.tripId),
+    );
+
+    const payments = await db.orm.public.Payment.all();
+    const users = await db.orm.public.User.all();
+    const directions = await db.orm.public.RouteDirection.all();
+    const routes = await db.orm.public.Route.all();
+    const stops = await db.orm.public.Stop.all();
+
+    let totalRevenue = 0;
+    let totalTicketsSold = 0;
+    let verifiedTickets = 0;
+    let pendingTickets = 0;
+
+    const busRevenueMap = new Map<
+      number,
+      {
+        busId: number
+        busNumber: string
+        registrationNumber: string
+        ticketsSold: number
+        revenue: number
+      }
+    >();
+
+    for (const bus of ownerBuses) {
+      busRevenueMap.set(bus.id, {
+        busId: bus.id,
+        busNumber: bus.busNumber,
+        registrationNumber: bus.registrationNumber,
+        ticketsSold: 0,
+        revenue: 0,
+      });
+    }
+
+    const transactions = ownerTickets
+      .map((ticket) => {
+        const trip = ownerTrips.find((item) => item.id === ticket.tripId);
+        const bus = ownerBuses.find((item) => item.id === trip?.busId);
+        const direction = directions.find(
+          (item) => item.id === trip?.routeDirectionId,
+        );
+        const route = routes.find((item) => item.id === direction?.routeId);
+        const fromStop = stops.find((item) => item.id === ticket.fromStopId);
+        const toStop = stops.find((item) => item.id === ticket.toStopId);
+        const passenger = users.find((item) => item.id === ticket.passengerId);
+        const conductor = users.find((item) => item.id === trip?.conductorId);
+        const payment = payments.find((item) => item.ticketId === ticket.id);
+
+        const isPaid =
+          ticket.status === 'ISSUED' || payment?.status === 'SUCCESS';
+
+        const amount = Number(ticket.fareAmount) || 0;
+
+        if (isPaid) {
+          totalRevenue += amount;
+          totalTicketsSold += 1;
+          if (ticket.usedAt !== null) {
+            verifiedTickets += 1;
+          }
+
+          if (bus && busRevenueMap.has(bus.id)) {
+            const entry = busRevenueMap.get(bus.id)!;
+            entry.ticketsSold += 1;
+            entry.revenue =
+              Math.round((entry.revenue + amount + Number.EPSILON) * 100) / 100;
+          }
+        } else if (ticket.status === 'PENDING_PAYMENT') {
+          pendingTickets += 1;
+        }
+
+        return {
+          ticketId: ticket.id,
+          tripId: ticket.tripId,
+          passengerName: passenger?.name ?? 'Passenger',
+          conductorName: conductor?.name ?? 'Unassigned',
+          busNumber: bus?.busNumber ?? 'N/A',
+          registrationNumber: bus?.registrationNumber ?? '',
+          routeName: route?.name ?? 'N/A',
+          fromStop: fromStop?.name ?? 'N/A',
+          toStop: toStop?.name ?? 'N/A',
+          fareAmount: amount,
+          ticketStatus: ticket.status,
+          paymentStatus: payment?.status ?? 'PENDING',
+          verified: ticket.usedAt !== null,
+          usedAt: ticket.usedAt,
+          createdAt: ticket.createdAt,
+        };
+      })
+      .sort((a, b) => Temporal.Instant.compare(b.createdAt, a.createdAt));
+
+    totalRevenue = Math.round((totalRevenue + Number.EPSILON) * 100) / 100;
+
+    return {
+      summary: {
+        totalRevenue,
+        totalTicketsSold,
+        verifiedTickets,
+        pendingTickets,
+      },
+      busBreakdown: Array.from(busRevenueMap.values()),
+      transactions,
+    };
+  }
   
 }

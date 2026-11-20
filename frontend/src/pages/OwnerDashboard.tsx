@@ -139,20 +139,26 @@ function OwnerDashboard() {
 </button>
   </div>
 
-  {/* Trip Management */}
-  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-    <h2 className="text-lg font-bold text-slate-900">
-      Trip Management
-    </h2>
-    <p className="mt-2 text-sm text-slate-500">
-      Schedule and manage daily trips.
-    </p>
-    <span className="mt-5 inline-block text-sm font-semibold text-blue-600">
-      Coming next
-    </span>
-  </div>
 
-  {/* Conductor Management */}
+{/* Trip Management */}
+<div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+  <h2 className="text-lg font-bold text-slate-900">
+    Trip Management
+  </h2>
+  <p className="mt-2 text-sm text-slate-500">
+    Schedule and manage daily trips.
+  </p>
+
+  <button
+    onClick={() => navigate('/owner/trips')}
+    className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+  >
+    Manage Trips
+  </button>
+</div>
+
+
+{/* Conductor Management */}
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <h2 className="text-lg font-bold text-slate-900">
       Conductor Management
@@ -160,12 +166,15 @@ function OwnerDashboard() {
     <p className="mt-2 text-sm text-slate-500">
       Add and manage your conductors.
     </p>
-    <span className="mt-5 inline-block text-sm font-semibold text-blue-600">
-      Coming next
-    </span>
+    <button
+      onClick={() => navigate('/owner/conductors')}
+      className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+    >
+      Manage Conductors
+    </button>
   </div>
 
-  {/* Revenue Reports */}
+ {/* Revenue Reports */}
   <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <h2 className="text-lg font-bold text-slate-900">
       Revenue Reports
@@ -173,9 +182,12 @@ function OwnerDashboard() {
     <p className="mt-2 text-sm text-slate-500">
       Track bookings and revenue.
     </p>
-    <span className="mt-5 inline-block text-sm font-semibold text-blue-600">
-      Coming next
-    </span>
+    <button
+      onClick={() => navigate('/owner/revenue')}
+      className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+    >
+      View Reports
+    </button>
   </div>
 </div>
 

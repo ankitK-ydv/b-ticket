@@ -90,31 +90,90 @@ if (
     });
   }
 
-  async getMyTrips(ownerId: number) {
-    const trips = await db.orm.public.Trip.all();
-    const buses = await db.orm.public.Bus.all();
-    const directions = await db.orm.public.RouteDirection.all();
-    const routes = await db.orm.public.Route.all();
+  
+async getMyTrips(ownerId: number) {
+  const trips = await db.orm.public.Trip.all()
+  const buses = await db.orm.public.Bus.all()
+  const directions = await db.orm.public.RouteDirection.all()
+  const routes = await db.orm.public.Route.all()
+  const users = await db.orm.public.User.all()
 
-    return trips
-      .filter((trip) => {
-        const bus = buses.find((item) => item.id === trip.busId);
-        const direction = directions.find(
-          (item) => item.id === trip.routeDirectionId,
-        );
-        const route = routes.find(
-          (item) => item.id === direction?.routeId,
-        );
+  const ownerTrips = trips
+    .filter((trip) => {
+      const bus = buses.find((item) => item.id === trip.busId)
 
-        return bus?.ownerId === ownerId && route?.ownerId === ownerId;
-      })
-      .sort((a, b) =>
-  Temporal.Instant.compare(
-    a.departureTime,
-    b.departureTime,
-  ),
-);
-  }
+      const direction = directions.find(
+        (item) => item.id === trip.routeDirectionId,
+      )
+
+      const route = routes.find(
+        (item) => item.id === direction?.routeId,
+      )
+
+      return bus?.ownerId === ownerId && route?.ownerId === ownerId
+    })
+    .sort((a, b) =>
+      Temporal.Instant.compare(
+        a.departureTime,
+        b.departureTime,
+      ),
+    )
+
+  return ownerTrips.map((trip) => {
+    const bus = buses.find((item) => item.id === trip.busId)
+
+    const direction = directions.find(
+      (item) => item.id === trip.routeDirectionId,
+    )
+
+    const route = routes.find(
+      (item) => item.id === direction?.routeId,
+    )
+
+    const conductor = users.find(
+      (user) =>
+        user.id === trip.conductorId &&
+        user.role === 'CONDUCTOR',
+    )
+
+    return {
+      ...trip,
+
+      bus: bus
+        ? {
+            id: bus.id,
+            busNumber: bus.busNumber,
+            registrationNumber: bus.registrationNumber,
+          }
+        : null,
+
+      route: route
+        ? {
+            id: route.id,
+            name: route.name,
+            code: route.code,
+          }
+        : null,
+
+      routeDirection: direction
+        ? {
+            id: direction.id,
+            name: direction.name,
+            code: direction.code,
+          }
+        : null,
+
+      conductor: conductor
+        ? {
+            id: conductor.id,
+            name: conductor.name,
+            phone: conductor.phone,
+          }
+        : null,
+    }
+  })
+}
+
 
   async getTripById(tripId: number, ownerId: number) {
   if (!Number.isInteger(tripId) || tripId <= 0) {

@@ -47,6 +47,15 @@ async getConductorHistory(@Req() req: any) {
 
 
 
+@Get('owner/revenue')
+  @Roles('OWNER')
+  async getOwnerRevenueReport(@Req() req: any) {
+    return this.ticketsService.getOwnerRevenueReport(
+      Number(req.user.sub),
+    );
+  }
+
+
   
   @Post('verify')
   @UseGuards(JwtAuthGuard, RolesGuard)

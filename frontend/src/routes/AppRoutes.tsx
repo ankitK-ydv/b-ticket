@@ -6,6 +6,8 @@ import {
   Navigate,
 } from 'react-router-dom'
 
+import TripManagement from '../pages/TripManagement'
+
 import Login from '../features/auth/Login'
 import Register from '../features/auth/Register'
 
@@ -25,6 +27,8 @@ import FareManagement from '../pages/FareManagement'
 
 import PaymentPage from '../pages/PaymentPage'
 import TicketDetailsPage from '../pages/TicketDetailsPage'
+import ConductorManagement from '../pages/ConductorManagement'
+import RevenueReports from '../pages/RevenueReports'
 
 function AppRoutes() {
   return (
@@ -90,6 +94,21 @@ function AppRoutes() {
             element={<BusManagement />}
           />
         </Route>
+
+        <Route
+  path="/owner/trips"
+  element={<TripManagement />}
+/>
+
+<Route
+  path="/owner/conductors"
+  element={<ConductorManagement />}
+/>
+
+<Route
+  path="/owner/revenue"
+  element={<RevenueReports />}
+/>
 
         {/* Conductor Routes */}
         <Route element={<ProtectedRoute allowedRoles={['CONDUCTOR']} />}>

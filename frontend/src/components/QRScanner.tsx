@@ -1,104 +1,109 @@
-
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 
 interface QRScannerProps {
   onScanSuccess: (decodedText: string) => void
+  onScanNext?: () => void
 }
 
-function QRScanner({ onScanSuccess }: QRScannerProps) {
-  const scannerRef = useRef<Html5Qrcode | null>(null)
+function QRScanner({ onScanSuccess, onScanNext }: QRScannerProps) {
   const callbackRef = useRef(onScanSuccess)
   const processingRef = useRef(false)
 
   const [scanning, setScanning] = useState(false)
-  const [starting, setStarting] = useState(false)
+  const [starting, setStarting] = useState(true)
   const [error, setError] = useState('')
 
-  // Keep the latest callback without restarting the camera.
   useEffect(() => {
     callbackRef.current = onScanSuccess
   }, [onScanSuccess])
 
-  const startScanner = useCallback(async () => {
-    const scanner = scannerRef.current
-    if (!scanner || starting || scanning) return
-
-    try {
-      setError('')
-      setStarting(true)
-      processingRef.current = false
-
-      const cameras = await Html5Qrcode.getCameras()
-
-      if (cameras.length === 0) {
-        setError('No camera found on this device.')
-        return
-      }
-
-      const camera =
-        cameras.find((item) =>
-          item.label.toLowerCase().includes('back')
-        ) || cameras[0]
-
-      await scanner.start(
-        camera.id,
-        {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1,
-        },
-        async (decodedText) => {
-          if (processingRef.current) return
-
-          processingRef.current = true
-          setScanning(false)
-
-          try {
-            await scanner.stop()
-          } catch (err) {
-            console.error('Scanner stop error:', err)
-          }
-
-          callbackRef.current(decodedText)
-        },
-        () => {
-          // Normal frame scanning errors are ignored.
-        }
-      )
-
-      setScanning(true)
-    } catch (err) {
-      console.error('QR scanner error:', err)
-      setError('Unable to start camera. Please allow camera permission.')
-    } finally {
-      setStarting(false)
-    }
-  }, [starting, scanning])
-
   useEffect(() => {
+    let isMounted = true
     const scanner = new Html5Qrcode('bticket-qr-reader')
-    scannerRef.current = scanner
 
-    void startScanner()
+    const initScanner = async () => {
+      try {
+        setError('')
+        setStarting(true)
+        processingRef.current = false
+
+        const cameras = await Html5Qrcode.getCameras()
+
+        if (!isMounted) return
+
+        if (cameras.length === 0) {
+          setError('No camera found on this device.')
+          setStarting(false)
+          return
+        }
+
+        const camera =
+          cameras.find((item) =>
+            item.label.toLowerCase().includes('back')
+          ) || cameras[0]
+
+        await scanner.start(
+          camera.id,
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1,
+          },
+          async (decodedText) => {
+            if (processingRef.current) return
+            processingRef.current = true
+
+            if (isMounted) {
+              setScanning(false)
+            }
+
+            try {
+              if (scanner.isScanning) {
+                await scanner.stop()
+              }
+            } catch (err) {
+              console.error('Scanner stop error:', err)
+            }
+
+            callbackRef.current(decodedText)
+          },
+          () => {
+            // Normal frame scanning errors are ignored
+          }
+        )
+
+        if (isMounted) {
+          setScanning(true)
+        }
+      } catch (err) {
+        console.error('QR scanner error:', err)
+        if (isMounted) {
+          setError('Unable to start camera. Please allow camera permission.')
+        }
+      } finally {
+        if (isMounted) {
+          setStarting(false)
+        }
+      }
+    }
+
+    void initScanner()
 
     return () => {
-      scannerRef.current = null
-
+      isMounted = false
       if (scanner.isScanning) {
-        void scanner.stop()
+        void scanner
+          .stop()
           .then(() => scanner.clear())
-          .catch(console.error)
+          .catch(() => {})
       } else {
-        scanner.clear()
+        try {
+          scanner.clear()
+        } catch {}
       }
     }
   }, [])
-
-  const handleScanNext = async () => {
-    if (scannerRef.current?.isScanning) return
-    await startScanner()
-  }
 
   return (
     <div className="w-full">
@@ -128,7 +133,7 @@ function QRScanner({ onScanSuccess }: QRScannerProps) {
       {!scanning && !starting && (
         <button
           type="button"
-          onClick={handleScanNext}
+          onClick={() => onScanNext?.()}
           className="mt-4 w-full rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
         >
           Scan Next Ticket

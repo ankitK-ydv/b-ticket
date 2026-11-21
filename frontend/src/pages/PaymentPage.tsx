@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState , useRef} from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import api from '../services/api'
 import QRCode from 'qrcode'
@@ -29,6 +29,7 @@ const [qrImage, setQrImage] = useState('')
   const [payment, setPayment] = useState<Payment | null>(null)
   const [loading, setLoading] = useState(true)
   const [paying, setPaying] = useState(false)
+  const initializedTicketRef = useRef<string | null>(null)
   const [error, setError] = useState('')
   const [result, setResult] = useState<PaymentResponse | null>(null)
 
@@ -56,9 +57,13 @@ const [qrImage, setQrImage] = useState('')
       return
     }
 
+    if (initializedTicketRef.current === ticketId) {
+      return
+    }
+    initializedTicketRef.current = ticketId
+
     createPayment()
   }, [ticketId])
-
   const handlePayment = async () => {
     if (!payment) return
 

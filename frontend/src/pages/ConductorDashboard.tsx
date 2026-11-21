@@ -65,6 +65,7 @@ function ConductorDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedTrip, setSelectedTrip] = useState<number | null>(null)
+  const [scannerKey, setScannerKey] = useState(0)
 
   const [verifying, setVerifying] = useState(false)
   const [verification, setVerification] =
@@ -138,9 +139,11 @@ const [historyError, setHistoryError] = useState('')
         qrToken,
       })
 
-      setVerification(response.data)
+      setVerification(response.data) 
+      void fetchVerificationHistory()
     } catch (err: any) {
       console.error('Ticket verification error:', err)
+    
 
       const message = err.response?.data?.message
 
@@ -414,7 +417,15 @@ const [historyError, setHistoryError] = useState('')
             </p>
 
             <div className="mx-auto mt-6 max-w-md">
-              <QRScanner onScanSuccess={handleScanSuccess} />
+              <QRScanner
+  key={scannerKey}
+  onScanSuccess={handleScanSuccess}
+  onScanNext={() => {
+    setVerification(null)
+    setVerificationError('')
+    setScannerKey((prev) => prev + 1)
+  }}
+/>
             </div>
 
             {verifying && (

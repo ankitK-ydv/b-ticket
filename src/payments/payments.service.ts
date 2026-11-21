@@ -43,14 +43,30 @@ export class PaymentsService {
       return existingPayment;
     }
 
-    const payment = await db.orm.public.Payment.create({
-      ticketId: ticket.id,
-      amount: ticket.fareAmount,
-      status: 'PENDING',
-      provider: 'TEST',
-    });
+  try {
+      const payment = await db.orm.public.Payment.create({
+        ticketId: ticket.id,
+        amount: ticket.fareAmount,
+        status: 'PENDING',
+        provider: 'TEST',
+      });
 
-    return payment;
+      return payment;
+    } catch (error) {
+      // Handle concurrent duplicate request safely (ticketId is @unique)
+      const latestPayments = await db.orm.public.Payment.all();
+      const createdPayment = latestPayments.find(
+        (item) => item.ticketId === ticketId,
+      );
+
+      if (createdPayment) {
+        return createdPayment;
+      }
+
+      throw error;
+    }
+
+   
   }
 
   async getMyPayments(passengerId: number) {
